@@ -37,7 +37,6 @@ const CalendarComponent = () => {
     { name: "Original", hex: "#e0335d" },
   ];
 
-  //monthImages[index]  0 - Jan .... 11 - dec
   const monthImages = [
     janImg,
     febImg,
@@ -52,6 +51,7 @@ const CalendarComponent = () => {
     novImg,
     decImg,
   ];
+
   const quotes = [
     "The best time to plant a tree was 20 years ago. The second best time is now.",
     "Life is what happens when you're busy making other plans.",
@@ -89,7 +89,6 @@ const CalendarComponent = () => {
   const [notes, setNotes] = useState({ monthly: "" });
   const [holidays, setHolidays] = useState({});
 
-  //local storage of notes etc..
   useEffect(() => {
     try {
       const s = localStorage.getItem(`notes_${storageKey}`);
@@ -114,7 +113,6 @@ const CalendarComponent = () => {
     localStorage.setItem(scribbleKey, dataURL);
   };
 
-  //canvas for scribble area & drawing logics
   const loadCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -188,7 +186,6 @@ const CalendarComponent = () => {
     (_, i) => i + 1
   );
 
-  //next - last month logics
   const changeMonth = (offset) => {
     if (showCover) {
       if (offset === 1) {
@@ -227,7 +224,6 @@ const CalendarComponent = () => {
     }
   };
 
-  // holiday logic
   const toggleHoliday = () => {
     if (!startDate) return;
     if (holidays[startDate]) {
@@ -242,7 +238,7 @@ const CalendarComponent = () => {
 
   const getDayClass = (day, type = "current") => {
     const base =
-      "h-8 w-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-full transition-all text-sm font-medium relative ";
+      "h-7 w-7 sm:h-9 sm:w-9 flex items-center justify-center rounded-full transition-all text-xs sm:text-sm font-medium relative ";
     if (type !== "current")
       return base + "text-gray-300 cursor-default opacity-40";
     return base + "hover:bg-gray-100 text-gray-700 ";
@@ -250,15 +246,15 @@ const CalendarComponent = () => {
 
   const gridVariants = {
     enter: (d) => ({
-      rotateX: d > 0 ? -90 : 90,
       opacity: 0,
-      y: d > 0 ? 50 : -50,
+      x: d > 0 ? 50 : -50,
+      transition: { duration: 0.3 },
     }),
-    center: { rotateX: 0, opacity: 1, y: 0 },
+    center: { opacity: 1, x: 0, transition: { duration: 0.3 } },
     exit: (d) => ({
-      rotateX: d > 0 ? 90 : -90,
       opacity: 0,
-      y: d > 0 ? -50 : 50,
+      x: d > 0 ? -50 : 50,
+      transition: { duration: 0.3 },
     }),
   };
 
@@ -270,12 +266,11 @@ const CalendarComponent = () => {
 
   const isLastMonth = !showCover && currentMonth === 11;
 
-  //frontend ui starts here
   return (
-    <div className="min-h-screen bg-[#d1d5db] p-2 md:p-4 flex items-center justify-center font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#d1d5db] p-1 md:p-4 flex items-center justify-center font-sans overflow-hidden">
       <div
-        className="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col md:flex-row transform md:scale-95 transition-transform"
-        style={{ perspective: "1000px" }}
+        className="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col md:flex-row transform scale-[0.95] md:scale-95 transition-transform"
+        style={{ transformZ: 0 }}
       >
         <div className="absolute -top-5 left-0 right-0 flex justify-around px-6 md:px-12 z-50 pointer-events-none">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -317,7 +312,6 @@ const CalendarComponent = () => {
                   />
                 ))}
               </div>
-
               <div className="w-6 md:w-10 flex-shrink-0 bg-black/20 flex flex-col items-center justify-center gap-5 py-8">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div
@@ -326,7 +320,6 @@ const CalendarComponent = () => {
                   />
                 ))}
               </div>
-
               <div className="flex-1 relative flex flex-col justify-between p-8 md:p-16 overflow-hidden">
                 <div className="absolute -right-32 -top-32 w-[300px] md:w-[500px] h-[300px] md:h-[500px] rounded-full border-[30px] md:border-[60px] border-white/10 pointer-events-none" />
                 <div className="flex items-center gap-3">
@@ -338,13 +331,13 @@ const CalendarComponent = () => {
                 <div className="flex flex-col gap-4">
                   <motion.h1
                     className="text-white font-black leading-none tracking-tighter"
-                    style={{ fontSize: "clamp(60px, 15vw, 180px)" }}
+                    style={{ fontSize: "clamp(55px, 15vw, 180px)" }}
                   >
                     2026
                   </motion.h1>
                   <div className="max-w-xs md:max-w-md">
                     <div className="h-1 w-8 md:w-12 bg-white mb-4" />
-                    <p className="text-white/90 text-sm md:text-lg font-serif italic leading-relaxed">
+                    <p className="text-white/90 text-xs md:text-lg font-serif italic leading-relaxed">
                       "{coverQuote}"
                     </p>
                   </div>
@@ -375,7 +368,7 @@ const CalendarComponent = () => {
           )}
         </AnimatePresence>
 
-        <div className="w-full md:w-1/3 relative bg-gray-950 h-64 md:h-auto min-h-[250px] md:min-h-full rounded-t-3xl md:rounded-tr-none md:rounded-l-3xl overflow-hidden z-10">
+        <div className="w-full md:w-1/3 relative bg-gray-950 h-60 md:h-auto min-h-[220px] md:min-h-full rounded-t-3xl md:rounded-tr-none md:rounded-l-3xl overflow-hidden z-10">
           <AnimatePresence mode="wait">
             <motion.img
               key={currentMonth}
@@ -389,7 +382,7 @@ const CalendarComponent = () => {
             />
           </AnimatePresence>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-          <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col justify-between">
+          <div className="relative z-10 p-5 md:p-8 text-white h-full flex flex-col justify-between">
             <div>
               <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter">
                 {currentYear}
@@ -403,19 +396,19 @@ const CalendarComponent = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="text-sm md:text-lg tracking-[0.3em] font-light uppercase text-white"
+                    className="text-[10px] md:text-lg tracking-[0.3em] font-light uppercase text-white"
                   >
                     {monthNames[currentMonth]}
                   </motion.p>
                 </AnimatePresence>
               </div>
             </div>
-            <div className="p-2">
+            <div className="p-1">
               <div
-                className="h-1 w-8 mb-4"
+                className="h-1 w-6 md:w-8 mb-3 md:mb-4"
                 style={{ backgroundColor: themeColor }}
               />
-              <p className="text-xs md:text-sm italic font-serif leading-relaxed opacity-90">
+              <p className="text-[10px] md:text-sm italic font-serif leading-relaxed opacity-90">
                 {startDate && holidays[startDate]
                   ? `Event: ${holidays[startDate]}`
                   : quotes[currentMonth]}
@@ -424,15 +417,15 @@ const CalendarComponent = () => {
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-8 flex flex-col bg-white rounded-b-3xl md:rounded-bl-none md:rounded-r-3xl relative overflow-hidden">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4 z-20 bg-white">
-            <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex-1 p-3 md:p-8 flex flex-col bg-white rounded-b-3xl md:rounded-bl-none md:rounded-r-3xl relative overflow-hidden">
+          <div className="flex justify-between items-center mb-4 md:mb-6 border-b border-gray-100 pb-3 md:pb-4 z-20 bg-white">
+            <div className="flex items-center gap-1 md:gap-4">
               <button
                 onClick={() => changeMonth(-1)}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black transition-colors"
+                className="p-1.5 md:p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-black transition-colors"
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-3.5 h-3.5 md:w-4 md:h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -445,7 +438,7 @@ const CalendarComponent = () => {
                   />
                 </svg>
               </button>
-              <div className="overflow-hidden w-28 md:w-36 text-center">
+              <div className="overflow-hidden w-24 md:w-36 text-center">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.h2
                     key={currentMonth}
@@ -454,7 +447,7 @@ const CalendarComponent = () => {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    className="text-xl md:text-2xl font-black tracking-tight"
+                    className="text-lg md:text-2xl font-black tracking-tight"
                     style={{ color: themeColor }}
                   >
                     {monthNames[currentMonth]}
@@ -464,14 +457,14 @@ const CalendarComponent = () => {
               <button
                 onClick={() => changeMonth(1)}
                 disabled={isLastMonth}
-                className={`p-2 rounded-full transition-colors ${
+                className={`p-1.5 md:p-2 rounded-full transition-colors ${
                   isLastMonth
                     ? "text-gray-200 cursor-not-allowed"
                     : "hover:bg-gray-100 text-gray-400 hover:text-black"
                 }`}
               >
                 <svg
-                  className="w-4 h-4"
+                  className="w-3.5 h-3.5 md:w-4 md:h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -488,7 +481,7 @@ const CalendarComponent = () => {
             {startDate && (
               <button
                 onClick={toggleHoliday}
-                className="text-[9px] md:text-[10px] font-bold px-3 md:px-4 py-2 rounded-full transition-all"
+                className="text-[8px] md:text-[10px] font-bold px-2.5 md:px-4 py-1.5 md:py-2 rounded-full transition-all"
                 style={{
                   backgroundColor: `${themeColor}20`,
                   color: themeColor,
@@ -510,16 +503,16 @@ const CalendarComponent = () => {
                 exit="exit"
                 className="w-full"
                 style={{
-                  backfaceVisibility: "hidden",
-                  transformStyle: "preserve-3d",
+                  transform: "translateZ(0)",
+                  willChange: "transform, opacity",
                 }}
               >
-                <div className="grid grid-cols-7 mb-4">
+                <div className="grid grid-cols-7 mb-3 md:mb-4">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
                     (d, i) => (
                       <div
                         key={d}
-                        className="text-center text-[9px] md:text-[10px] font-black uppercase tracking-widest"
+                        className="text-center text-[8px] md:text-[10px] font-black uppercase tracking-widest"
                         style={{ color: i > 4 ? themeColor : "#9ca3af" }}
                       >
                         {d}
@@ -527,7 +520,7 @@ const CalendarComponent = () => {
                     )
                   )}
                 </div>
-                <div className="grid grid-cols-7 gap-y-2">
+                <div className="grid grid-cols-7 gap-y-1.5 md:gap-y-2">
                   {prevPadding.map((day) => (
                     <div key={`prev-${day}`} className="flex justify-center">
                       <div className={getDayClass(day, "prev")}>{day}</div>
@@ -540,10 +533,9 @@ const CalendarComponent = () => {
                     const end = endDate
                       ? Math.max(startDate, endDate)
                       : startDate;
+                    const isSelected = day === startDate || day === endDate;
                     const isWithinRange =
-                      start && end && day >= start && day <= end;
-                    const isSelected =
-                      day === startDate || day === endDate || isWithinRange;
+                      start && end && day > start && day < end;
                     const isToday =
                       today.getDate() === day &&
                       today.getMonth() === currentMonth &&
@@ -551,30 +543,27 @@ const CalendarComponent = () => {
                     const isWeekend =
                       (i + prevPadding.length) % 7 === 5 ||
                       (i + prevPadding.length) % 7 === 6;
-
                     return (
                       <div key={day} className="flex justify-center">
                         <button
                           onClick={() => handleDateClick(day)}
                           className={getDayClass(day, "current")}
                           style={{
-                            backgroundColor: isSelected ? themeColor : "",
+                            backgroundColor: isSelected
+                              ? themeColor
+                              : isWithinRange
+                              ? `${themeColor}33`
+                              : "",
                             color: isSelected
                               ? "white"
-                              : isWeekend
+                              : isWithinRange || isWeekend
                               ? themeColor
                               : "#374151",
                             outline:
                               isToday && !isSelected
-                                ? `2px solid ${themeColor}`
+                                ? `1.5px solid ${themeColor}`
                                 : "",
-                            outlineOffset: "2px",
-                            opacity:
-                              isWithinRange &&
-                              day !== startDate &&
-                              day !== endDate
-                                ? 0.7
-                                : 1,
+                            outlineOffset: "1.5px",
                           }}
                         >
                           {day}
@@ -602,9 +591,9 @@ const CalendarComponent = () => {
             </AnimatePresence>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 z-20 bg-white">
+          <div className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-gray-100 z-20 bg-white">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+              <span className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                 {startDate
                   ? `Notes for ${startDate} ${monthNames[currentMonth]}...`
                   : "Notes..."}
@@ -615,7 +604,7 @@ const CalendarComponent = () => {
                     setStartDate(null);
                     setEndDate(null);
                   }}
-                  className="text-[9px] font-black flex items-center gap-1 transition-colors hover:opacity-70 uppercase"
+                  className="text-[8px] md:text-[9px] font-black flex items-center gap-1 transition-colors hover:opacity-70 uppercase"
                   style={{ color: themeColor }}
                 >
                   <svg
@@ -630,13 +619,12 @@ const CalendarComponent = () => {
                       strokeWidth={3}
                       d="M10 19l-7-7 7-7"
                     />
-                  </svg>{" "}
+                  </svg>
                   BACK TO MONTHLY VIEW
                 </button>
               )}
             </div>
-
-            <div className="flex flex-row gap-4 items-start">
+            <div className="flex flex-row gap-3 md:gap-4 items-start">
               <div className="flex-1 relative">
                 <textarea
                   value={
@@ -649,7 +637,7 @@ const CalendarComponent = () => {
                         e.target.value,
                     })
                   }
-                  className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 rounded-none p-0 text-sm text-gray-700 h-24 resize-none leading-[24px]"
+                  className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 rounded-none p-0 text-xs md:text-sm text-gray-700 h-24 resize-none leading-[24px]"
                   style={{
                     caretColor: themeColor,
                     backgroundImage: `linear-gradient(transparent, transparent 23px, #e5e7eb 23px)`,
@@ -658,9 +646,8 @@ const CalendarComponent = () => {
                   }}
                 />
               </div>
-
-              <div className="w-24 md:w-28 flex flex-col items-center shrink-0">
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-lg border border-gray-200 relative cursor-crosshair overflow-hidden group">
+              <div className="w-20 md:w-28 flex flex-col items-center shrink-0">
+                <div className="w-16 h-16 md:w-24 md:h-24 bg-gray-50 rounded-lg border border-gray-200 relative cursor-crosshair overflow-hidden group">
                   <canvas
                     ref={canvasRef}
                     onMouseDown={startDrawing}
@@ -676,12 +663,12 @@ const CalendarComponent = () => {
                   />
                   <button
                     onClick={clearCanvas}
-                    className="absolute bottom-1 right-1 px-2 py-1 text-[9px] font-extrabold text-gray-400 md:opacity-0 md:group-hover:opacity-100 hover:text-red-500 transition-all z-30"
+                    className="absolute bottom-1 right-1 px-1.5 py-0.5 text-[8px] font-extrabold text-gray-400 md:opacity-0 md:group-hover:opacity-100 hover:text-red-500 transition-all z-30"
                   >
                     CLR
                   </button>
                 </div>
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                <span className="text-[8px] md:text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                   Scribble
                 </span>
               </div>
