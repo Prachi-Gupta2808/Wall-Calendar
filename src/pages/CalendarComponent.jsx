@@ -28,6 +28,9 @@ const CalendarComponent = () => {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
+  const [stickers, setStickers] = useState([]);
+  const [stickerMode, setStickerMode] = useState(false);
+
   const [themeColor, setThemeColor] = useState("#F9B2D7");
   const colorOptions = [
     { name: "Pink", hex: "#F9B2D7" },
@@ -86,6 +89,8 @@ const CalendarComponent = () => {
 
   const storageKey = `cal_${currentYear}_${currentMonth}`;
   const scribbleKey = `scribble_${currentYear}_${currentMonth}`;
+  const stickersKey = `stickers_${currentYear}_${currentMonth}`;
+
   const [notes, setNotes] = useState({ monthly: "" });
   const [holidays, setHolidays] = useState({});
 
@@ -95,17 +100,21 @@ const CalendarComponent = () => {
       setNotes(s ? JSON.parse(s) : { monthly: "" });
       const h = localStorage.getItem(`holidays_${storageKey}`);
       setHolidays(h ? JSON.parse(h) : {});
+      const st = localStorage.getItem(stickersKey);
+      setStickers(st ? JSON.parse(st) : []);
       loadCanvas();
     } catch (err) {
       setNotes({ monthly: "" });
       setHolidays({});
+      setStickers([]);
     }
   }, [storageKey, currentMonth, showCover]);
 
   useEffect(() => {
     localStorage.setItem(`notes_${storageKey}`, JSON.stringify(notes));
     localStorage.setItem(`holidays_${storageKey}`, JSON.stringify(holidays));
-  }, [notes, holidays, storageKey]);
+    localStorage.setItem(stickersKey, JSON.stringify(stickers));
+  }, [notes, holidays, stickers, storageKey, stickersKey]);
 
   const saveCanvas = () => {
     if (!canvasRef.current) return;
@@ -171,6 +180,40 @@ const CalendarComponent = () => {
     localStorage.removeItem(scribbleKey);
   };
 
+  const handleStickerPlace = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    setStickers([...stickers, { x, y, id: Date.now() }]);
+    setStickerMode(false);
+  };
+
+  const handleWrapperClick = (e) => {
+    if (stickerMode) {
+      handleStickerPlace(e);
+    }
+  };
+
+  const removeSticker = (id, e) => {
+    e.stopPropagation();
+    if (window.confirm("Remove this heart?")) {
+      setStickers(stickers.filter((s) => s.id !== id));
+    }
+  };
+
+  const HeartIcon = ({ className, style }) => (
+    <svg
+      className={className}
+      style={style}
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+    </svg>
+  );
+
   const firstDayRaw = new Date(currentYear, currentMonth, 1).getDay();
   const firstDayOfMonth = firstDayRaw === 0 ? 6 : firstDayRaw - 1;
   const daysInMonthCount = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -226,14 +269,37 @@ const CalendarComponent = () => {
 
   const toggleHoliday = () => {
     if (!startDate) return;
-    if (holidays[startDate]) {
+    const currentEvents = Array.isArray(holidays[startDate])
+      ? holidays[startDate]
+      : [];
+    const title = prompt("Enter Event Name:", "New Event");
+    if (title) {
+      setHolidays({ ...holidays, [startDate]: [...currentEvents, title] });
+    }
+  };
+
+  const removeIndividualEvent = (indexToRemove) => {
+    if (!startDate) return;
+    const currentEvents = Array.isArray(holidays[startDate])
+      ? holidays[startDate]
+      : [];
+    const updatedEvents = currentEvents.filter(
+      (_, index) => index !== indexToRemove
+    );
+    if (updatedEvents.length === 0) {
       const nh = { ...holidays };
       delete nh[startDate];
       setHolidays(nh);
     } else {
-      const title = prompt("Enter Event Name:", "New Event");
-      if (title) setHolidays({ ...holidays, [startDate]: title });
+      setHolidays({ ...holidays, [startDate]: updatedEvents });
     }
+  };
+
+  const clearHolidays = () => {
+    if (!startDate) return;
+    const nh = { ...holidays };
+    delete nh[startDate];
+    setHolidays(nh);
   };
 
   const getDayClass = (day, type = "current") => {
@@ -244,24 +310,33 @@ const CalendarComponent = () => {
     return base + "hover:bg-gray-100 text-gray-700 ";
   };
 
-  const gridVariants = {
-    enter: (d) => ({
+  // ── PAGE TURN ANIMATION VARIANTS ──
+  const pageFlipVariants = {
+    enter: (direction) => ({
+      rotateX: direction > 0 ? 90 : -90,
       opacity: 0,
-      x: d > 0 ? 50 : -50,
-      transition: { duration: 0.3 },
+      y: direction > 0 ? 100 : -100,
     }),
-    center: { opacity: 1, x: 0, transition: { duration: 0.3 } },
-    exit: (d) => ({
+    center: {
+      rotateX: 0,
+      opacity: 1,
+      y: 0,
+      transition: {
+        rotateX: { type: "spring", stiffness: 80, damping: 15 },
+        y: { type: "spring", stiffness: 80, damping: 15 },
+        opacity: { duration: 0.2 },
+      },
+    },
+    exit: (direction) => ({
+      rotateX: direction > 0 ? -90 : 90,
       opacity: 0,
-      x: d > 0 ? -50 : 50,
-      transition: { duration: 0.3 },
+      y: direction > 0 ? -100 : 100,
+      transition: {
+        rotateX: { duration: 0.3 },
+        y: { duration: 0.3 },
+        opacity: { duration: 0.2 },
+      },
     }),
-  };
-
-  const monthSlideVariants = {
-    enter: (d) => ({ x: d > 0 ? 40 : -40, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (d) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
   };
 
   const isLastMonth = !showCover && currentMonth === 11;
@@ -270,7 +345,13 @@ const CalendarComponent = () => {
     <div className="min-h-screen bg-[#d1d5db] p-1 md:p-4 flex items-center justify-center font-sans overflow-hidden">
       <div
         className="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col md:flex-row transform scale-[0.95] md:scale-95 transition-transform"
-        style={{ transformZ: 0 }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleStickerPlace}
+        onClick={handleWrapperClick}
+        style={{
+          cursor: stickerMode ? "crosshair" : "default",
+          perspective: "1200px", // Enable 3D perspective
+        }}
       >
         <div className="absolute -top-5 left-0 right-0 flex justify-around px-6 md:px-12 z-50 pointer-events-none">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -286,14 +367,33 @@ const CalendarComponent = () => {
           ))}
         </div>
 
+        {!showCover &&
+          stickers.map((s) => (
+            <div
+              key={s.id}
+              onClick={(e) => removeSticker(s.id, e)}
+              className="absolute z-[55] cursor-pointer group"
+              style={{
+                left: s.x,
+                top: s.y,
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              <HeartIcon
+                className="w-5 h-5 drop-shadow-md transition-transform group-hover:scale-125"
+                style={{ color: themeColor }}
+              />
+            </div>
+          ))}
+
         <AnimatePresence>
           {showCover && (
             <motion.div
               key="cover"
-              exit={{ y: "-100%" }}
-              transition={{ type: "spring", stiffness: 280, damping: 32 }}
+              exit={{ rotateX: -90, y: -200, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 100, damping: 20 }}
+              style={{ background: themeColor, transformOrigin: "top" }}
               className="absolute inset-0 z-40 rounded-3xl overflow-hidden flex"
-              style={{ background: themeColor }}
             >
               <div className="absolute right-4 md:right-8 top-6 md:top-8 flex flex-col gap-3 z-50 bg-black/10 p-2 rounded-full backdrop-blur-sm">
                 {colorOptions.map((color) => (
@@ -392,10 +492,9 @@ const CalendarComponent = () => {
                   <motion.p
                     key={currentMonth}
                     custom={direction}
-                    variants={monthSlideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
                     className="text-[10px] md:text-lg tracking-[0.3em] font-light uppercase text-white"
                   >
                     {monthNames[currentMonth]}
@@ -408,11 +507,34 @@ const CalendarComponent = () => {
                 className="h-1 w-6 md:w-8 mb-3 md:mb-4"
                 style={{ backgroundColor: themeColor }}
               />
-              <p className="text-[10px] md:text-sm italic font-serif leading-relaxed opacity-90">
-                {startDate && holidays[startDate]
-                  ? `Event: ${holidays[startDate]}`
-                  : quotes[currentMonth]}
-              </p>
+              <div className="max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                {startDate &&
+                Array.isArray(holidays[startDate]) &&
+                holidays[startDate].length > 0 ? (
+                  <div className="space-y-2">
+                    {holidays[startDate].map((event, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between bg-white/10 backdrop-blur-md p-2 rounded-lg border border-white/5 group"
+                      >
+                        <span className="text-[10px] md:text-xs font-medium truncate pr-2">
+                          {event}
+                        </span>
+                        <button
+                          onClick={() => removeIndividualEvent(idx)}
+                          className="text-[8px] font-black text-white/40 hover:text-red-400 transition-colors uppercase"
+                        >
+                          CLR
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] md:text-sm italic font-serif leading-relaxed opacity-90">
+                    {quotes[currentMonth]}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -443,10 +565,9 @@ const CalendarComponent = () => {
                   <motion.h2
                     key={currentMonth}
                     custom={direction}
-                    variants={monthSlideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
                     className="text-lg md:text-2xl font-black tracking-tight"
                     style={{ color: themeColor }}
                   >
@@ -477,35 +598,74 @@ const CalendarComponent = () => {
                   />
                 </svg>
               </button>
-            </div>
-            {startDate && (
+
               <button
-                onClick={toggleHoliday}
-                className="text-[8px] md:text-[10px] font-bold px-2.5 md:px-4 py-1.5 md:py-2 rounded-full transition-all"
-                style={{
-                  backgroundColor: `${themeColor}20`,
-                  color: themeColor,
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStickerMode((m) => !m);
                 }}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData("heart", "true")}
+                className="cursor-grab active:cursor-grabbing hover:scale-110 transition-transform rounded-full p-1"
+                style={{
+                  outline: stickerMode ? `2px solid ${themeColor}` : "none",
+                  outlineOffset: "2px",
+                }}
+                title={
+                  stickerMode
+                    ? "Tap anywhere to place a heart"
+                    : "Drag or tap to place hearts"
+                }
               >
-                {holidays[startDate] ? "✕ REMOVE" : "+ ADD EVENT"}
+                <HeartIcon className="w-6 h-6" style={{ color: themeColor }} />
               </button>
+            </div>
+
+            {startDate && (
+              <div className="flex gap-2">
+                <button
+                  onClick={toggleHoliday}
+                  className="text-[8px] md:text-[10px] font-bold px-2 md:px-3 py-1.5 rounded-full transition-all"
+                  style={{
+                    backgroundColor: `${themeColor}20`,
+                    color: themeColor,
+                  }}
+                >
+                  + ADD EVENT
+                </button>
+                {holidays[startDate] && (
+                  <button
+                    onClick={clearHolidays}
+                    className="text-[8px] md:text-[10px] font-bold px-2 md:px-3 py-1.5 rounded-full transition-all bg-red-50 text-red-500"
+                  >
+                    ✕ CLEAR ALL
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          <div className="flex-1 relative overflow-hidden">
+          <div
+            className="flex-1 relative overflow-hidden"
+            style={{ perspective: "1000px" }}
+          >
             <AnimatePresence mode="popLayout" custom={direction}>
               <motion.div
                 key={currentMonth}
                 custom={direction}
-                variants={gridVariants}
+                variants={pageFlipVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="w-full"
-                style={{
-                  transform: "translateZ(0)",
-                  willChange: "transform, opacity",
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(e, info) => {
+                  if (info.offset.y < -100) changeMonth(1);
+                  else if (info.offset.y > 100) changeMonth(-1);
                 }}
+                style={{ transformOrigin: direction > 0 ? "top" : "bottom" }}
+                className="w-full"
               >
                 <div className="grid grid-cols-7 mb-3 md:mb-4">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
@@ -543,10 +703,15 @@ const CalendarComponent = () => {
                     const isWeekend =
                       (i + prevPadding.length) % 7 === 5 ||
                       (i + prevPadding.length) % 7 === 6;
+                    const hasEvents =
+                      Array.isArray(holidays[day]) && holidays[day].length > 0;
                     return (
                       <div key={day} className="flex justify-center">
                         <button
-                          onClick={() => handleDateClick(day)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDateClick(day);
+                          }}
                           className={getDayClass(day, "current")}
                           style={{
                             backgroundColor: isSelected
@@ -567,7 +732,7 @@ const CalendarComponent = () => {
                           }}
                         >
                           {day}
-                          {holidays[day] && (
+                          {hasEvents && (
                             <span
                               className="absolute bottom-1 w-1 h-1 rounded-full"
                               style={{
@@ -676,6 +841,11 @@ const CalendarComponent = () => {
           </div>
         </div>
       </div>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+      `}</style>
     </div>
   );
 };
